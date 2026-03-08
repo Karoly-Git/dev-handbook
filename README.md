@@ -1,6 +1,6 @@
 # Developer Knowledge Base
 
-A personal knowledge base containing notes, guides, patterns, and troubleshooting references gathered while building software.
+A personal knowledge base containing notes, guides, patterns, and troubleshooting references gathered while building apps.
 This repository serves as a long-term learning archive and quick reference for development concepts and solutions.
 
 ---
