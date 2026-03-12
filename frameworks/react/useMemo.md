@@ -1,127 +1,209 @@
-# React Performance Optimization
+# React `useMemo`
 
-## useMemo Hook
+`useMemo` is a **React performance optimization hook** that **memoizes (caches) the result of a calculation**.
 
-------------------------------------------------------------------------
+React components run their code **every time they render**. If a calculation is expensive, this can slow down the UI.
 
-# 1. What is useMemo
+`useMemo` ensures the calculation **only runs when its dependencies change**.
 
-`useMemo` is a React hook used to **memoize (cache) the result of a
-calculation**.
+---
 
-It prevents expensive calculations from running **on every render**.
+# Syntax
 
-React will only recompute the value when **dependencies change**.
-
-This helps improve performance in components that re-render frequently.
-
-------------------------------------------------------------------------
-
-# 2. Basic Syntax
-
-``` tsx
+```tsx
 const memoizedValue = useMemo(() => {
-  return expensiveCalculation();
+    return calculation();
 }, [dependencies]);
 ```
 
-Explanation:
+| Part             | Description                           |
+| ---------------- | ------------------------------------- |
+| `useMemo()`      | React hook that memoizes a value      |
+| Function         | The calculation to run                |
+| Dependency array | When React should recompute the value |
+| Return value     | The cached result                     |
 
-    useMemo
-       ↓
-    runs the function
-       ↓
-    stores the result
-       ↓
-    reuses it unless dependencies change
+---
 
-------------------------------------------------------------------------
+# Basic Example
 
-# 3. Simple Example
+Without `useMemo`, calculations run **on every render**.
 
-``` tsx
-import { useMemo } from "react";
+```tsx
+import { useState } from "react";
 
-function Example() {
+export default function Example() {
+    const [count, setCount] = useState<number>(0);
 
-  const numbers = [1, 2, 3, 4, 5];
+    const doubled = count * 2;
 
-  const sum = useMemo(() => {
-    return numbers.reduce((a, b) => a + b, 0);
-  }, [numbers]);
+    return (
+        <>
+            <p>Doubled: {doubled}</p>
 
-  return <p>Sum: {sum}</p>;
-
+            <button onClick={() => setCount(count + 1)}>
+                Increment
+            </button>
+        </>
+    );
 }
 ```
 
-The sum calculation will only run if `numbers` changes.
+Here `doubled` recalculates **every render**, even if unnecessary.
 
-------------------------------------------------------------------------
+---
 
-# 4. Real World Example
+# Expensive Calculation Example
 
-Filtering and sorting lists is a common use case.
+Imagine a slow calculation.
 
-``` tsx
-const visibleItems = useMemo(() => {
+```tsx
+function slowCalculation(num: number): number {
+    console.log("Running slow calculation...");
 
-  return [...items]
-    .filter(item =>
-      item.name.toLowerCase().includes(search.toLowerCase())
-    )
-    .sort(
-      (a, b) =>
-        new Date(b.checkedInAt).getTime() -
-        new Date(a.checkedInAt).getTime()
-    );
+    for (let i = 0; i < 1000000000; i++) {}
 
-}, [items, search]);
+    return num * 2;
+}
 ```
 
-React will recompute the list only when:
+Without `useMemo`, this runs **every render**.
 
-    items changes
-    or
-    search changes
+---
 
-------------------------------------------------------------------------
+# Using `useMemo`
 
-# 5. When to Use useMemo
+```tsx
+import { useMemo, useState } from "react";
+
+function slowCalculation(num: number): number {
+    console.log("Running slow calculation...");
+
+    for (let i = 0; i < 1000000000; i++) {}
+
+    return num * 2;
+}
+
+export default function Example() {
+    const [count, setCount] = useState<number>(0);
+    const [number, setNumber] = useState<number>(5);
+
+    const result = useMemo(() => {
+        return slowCalculation(number);
+    }, [number]);
+
+    return (
+        <>
+            <p>Result: {result}</p>
+
+            <button onClick={() => setCount(count + 1)}>
+                Re-render
+            </button>
+
+            <button onClick={() => setNumber(number + 1)}>
+                Change Number
+            </button>
+        </>
+    );
+}
+```
+
+Behavior:
+
+| Action           | Slow Calculation Runs |
+| ---------------- | --------------------- |
+| Re-render button | ❌ No                  |
+| Change number    | ✅ Yes                 |
+
+---
+
+# Filtering Lists (Real World Example)
+
+A common real-world case is **filtering lists**.
+
+Without `useMemo`:
+
+```tsx
+const filteredUsers = users.filter((user) =>
+    user.name.includes(search)
+);
+```
+
+This runs **every render**.
+
+With `useMemo`:
+
+```tsx
+import { useMemo } from "react";
+
+const filteredUsers = useMemo(() => {
+    return users.filter((user) =>
+        user.name.includes(search)
+    );
+}, [users, search]);
+```
+
+Now filtering only runs when:
+
+* `users` changes
+* `search` changes
+
+---
+
+# When NOT to Use `useMemo`
+
+Do not use `useMemo` for simple calculations.
+
+Bad example:
+
+```tsx
+const value = useMemo(() => count + 1, [count]);
+```
+
+Why this is unnecessary:
+
+* The calculation is trivial
+* `useMemo` itself has overhead
+
+Rule of thumb:
 
 Use `useMemo` when:
 
--   Expensive calculations
--   Sorting large lists
--   Filtering large datasets
--   Complex derived values
+* Expensive calculations
+* Large lists
+* Complex filtering/sorting
+* Preventing unnecessary re-renders
 
-Examples:
+---
 
-    .filter()
-    .sort()
-    .reduce()
-    heavy calculations
+# `useMemo` vs `useCallback`
 
-------------------------------------------------------------------------
+| Hook          | Memoizes       |
+| ------------- | -------------- |
+| `useMemo`     | A **value**    |
+| `useCallback` | A **function** |
 
-# 6. Important Rule
+Example:
 
-Do not overuse `useMemo`.
+```tsx
+const memoizedValue = useMemo(() => computeValue(), []);
+const memoizedFunction = useCallback(() => computeValue(), []);
+```
 
-For small or cheap calculations, the performance gain is usually
-negligible.
+---
 
-Use it only when:
+# Quick Tip
 
-    calculations are expensive
-    or
-    components render frequently
+Use `useMemo` mainly for **expensive operations like filtering or sorting large datasets**.
 
-------------------------------------------------------------------------
+Example:
 
-# 7. Mental Model
+```tsx
+const sortedItems = useMemo(() => {
+    return items
+        .filter((item) => item.active)
+        .sort((a, b) => a.name.localeCompare(b.name));
+}, [items]);
+```
 
-    useMemo = remember a computed value
-
-It caches the result and recalculates it only when dependencies change.
+This prevents **filtering and sorting from running on every render**.
