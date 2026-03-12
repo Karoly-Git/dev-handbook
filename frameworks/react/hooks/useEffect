@@ -1,298 +1,313 @@
-# React `useEffect`
+# React useEffect
 
-## What `useEffect` Is Used For
+## Side Effects in React
 
-`useEffect` lets your component run **side effects after rendering**.
+------------------------------------------------------------------------
 
-Common side effects include:
+# 1. What is useEffect
 
-| Side Effect | Example |
-|-------------|--------|
-| Data fetching | API requests |
-| Subscriptions | WebSockets / listeners |
-| Timers | `setTimeout`, `setInterval` |
-| Browser APIs | `localStorage`, `document.title` |
-| DOM interactions | event listeners |
+`useEffect` is a React hook used to **run side effects after a component renders**.
 
----
+A side effect is anything that interacts with **something outside the React render process**.
 
-# Basic Syntax
+Common examples include:
+
+- API requests
+- timers
+- event listeners
+- localStorage
+- subscriptions
+
+React runs the effect **after the component is rendered to the DOM**.
+
+------------------------------------------------------------------------
+
+# 2. Basic Syntax
 
 ```tsx
 useEffect(() => {
-    // side effect code
+
+  // side effect code
+
 }, [dependencies]);
 ```
 
-| Part | Meaning |
-|-----|------|
-| `effect function` | Code executed after render |
-| `dependency array` | Controls when the effect runs |
+Explanation:
 
----
+    React renders component
+       ↓
+    DOM updates
+       ↓
+    useEffect runs
+       ↓
+    side effect happens
 
-# Implementation Examples
+------------------------------------------------------------------------
 
-## Run On Every Render
+# 3. Run Once on Mount
 
-Runs after **every render**.
-
-```tsx
-import { useEffect } from "react";
-
-export default function Example() {
-
-    useEffect(() => {
-        console.log("Component rendered");
-    });
-
-    return <div>Hello</div>;
-}
-```
-
----
-
-## Run Only On Component Mount
-
-Runs **once when the component appears**.
+Passing an empty dependency array makes the effect run **only once**.
 
 ```tsx
 import { useEffect } from "react";
 
-export default function Example() {
+function Example() {
 
-    useEffect(() => {
-        console.log("Component mounted");
-    }, []);
+  useEffect(() => {
+    console.log("Component mounted");
+  }, []);
 
-    return <div>Hello</div>;
+  return <div>Hello</div>;
+
 }
 ```
 
 Common uses:
 
-- Fetching data
-- Initializing libraries
-- Starting subscriptions
+- fetching data
+- initializing libraries
+- setting up subscriptions
 
----
+------------------------------------------------------------------------
 
-## Run When State Changes
+# 4. Run When State Changes
 
-Effect runs **when a dependency changes**.
+Effects can run when **specific values change**.
 
 ```tsx
 import { useState, useEffect } from "react";
 
-export default function Example() {
+function Example() {
 
-    const [count, setCount] = useState<number>(0);
+  const [count, setCount] = useState<number>(0);
 
-    useEffect(() => {
-        console.log("Count changed:", count);
-    }, [count]);
+  useEffect(() => {
+    console.log("Count changed:", count);
+  }, [count]);
 
-    return (
-        <button onClick={() => setCount(count + 1)}>
-            {count}
-        </button>
-    );
+  return (
+    <button onClick={() => setCount(count + 1)}>
+      {count}
+    </button>
+  );
+
 }
 ```
 
----
+The effect runs when:
 
-## Watching Multiple Dependencies
+    count changes
 
-The effect runs when **any dependency changes**.
+------------------------------------------------------------------------
+
+# 5. Watching Multiple Dependencies
+
+You can track multiple values.
 
 ```tsx
 useEffect(() => {
-    console.log("Filters changed");
+
+  console.log("Filters changed");
+
 }, [search, category]);
 ```
 
----
+The effect runs when:
 
-## Cleanup Functions
+    search changes
+    or
+    category changes
+
+------------------------------------------------------------------------
+
+# 6. Cleanup Functions
+
+Effects can return a **cleanup function**.
 
 Cleanup runs when:
 
-- component **unmounts**
-- dependencies **change**
+- the component unmounts
+- dependencies change
 
 ```tsx
 import { useEffect } from "react";
 
-export default function Example() {
+function Example() {
 
-    useEffect(() => {
+  useEffect(() => {
 
-        const handleResize = (): void => {
-            console.log(window.innerWidth);
-        };
+    const handleResize = (): void => {
+      console.log(window.innerWidth);
+    };
 
-        window.addEventListener("resize", handleResize);
+    window.addEventListener("resize", handleResize);
 
-        return () => {
-            window.removeEventListener("resize", handleResize);
-        };
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
 
-    }, []);
+  }, []);
 
-    return <div>Resize the window</div>;
+  return <div>Resize the window</div>;
+
 }
 ```
 
----
+------------------------------------------------------------------------
 
-# Data Fetching Example
+# 7. Data Fetching Example
 
-A common real-world pattern.
+Fetching data is one of the most common uses of `useEffect`.
 
 ```tsx
 import { useEffect, useState } from "react";
 
 type User = {
-    id: number;
-    name: string;
+  id: number;
+  name: string;
 };
 
-export default function Example() {
+function Example() {
 
-    const [users, setUsers] = useState<User[]>([]);
-    const [loading, setLoading] = useState<boolean>(true);
-    const [error, setError] = useState<string | null>(null);
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
-    useEffect(() => {
+  useEffect(() => {
 
-        async function fetchUsers(): Promise<void> {
-            try {
-                const response = await fetch("/api/users");
+    async function fetchUsers(): Promise<void> {
 
-                if (!response.ok) {
-                    throw new Error("Failed to fetch users");
-                };
+      try {
 
-                const data: User[] = await response.json();
-                setUsers(data);
+        const response = await fetch("/api/users");
 
-            } catch (err) {
-                setError((err as Error).message);
-            } finally {
-                setLoading(false);
-            };
-        };
+        if (!response.ok) {
+          throw new Error("Failed to fetch users");
+        }
 
-        fetchUsers();
+        const data: User[] = await response.json();
+        setUsers(data);
 
-    }, []);
+      } catch (err) {
 
-    if (loading) return <p>Loading...</p>;
-    if (error) return <p>{error}</p>;
+        setError((err as Error).message);
 
-    return (
-        <ul>
-            {users.map((user) => (
-                <li key={user.id}>{user.name}</li>
-            ))}
-        </ul>
-    );
+      } finally {
+
+        setLoading(false);
+
+      }
+
+    }
+
+    fetchUsers();
+
+  }, []);
+
+  if (loading) return <p>Loading...</p>;
+  if (error) return <p>{error}</p>;
+
+  return (
+    <ul>
+      {users.map(user => (
+        <li key={user.id}>{user.name}</li>
+      ))}
+    </ul>
+  );
+
 }
 ```
 
----
+------------------------------------------------------------------------
 
-# Common `useEffect` Mistakes
+# 8. Common useEffect Mistakes
 
 ## Missing Dependencies
 
-Bad:
+Bad example:
 
 ```tsx
 useEffect(() => {
-    console.log(count);
+  console.log(count);
 }, []);
 ```
 
-Correct:
+Correct example:
 
 ```tsx
 useEffect(() => {
-    console.log(count);
+  console.log(count);
 }, [count]);
 ```
 
 Rule:
 
-> Every value used inside the effect should appear in the dependency array.
+    Every variable used inside the effect should appear in the dependency array.
 
----
+------------------------------------------------------------------------
 
-## Making `useEffect` Async
+## Making useEffect Async
 
-Bad:
+Bad example:
 
 ```tsx
 useEffect(async () => {
-    const data = await fetch("/api");
+  const data = await fetch("/api");
 }, []);
 ```
 
-Correct:
+Correct pattern:
 
 ```tsx
 useEffect(() => {
 
-    async function fetchData(): Promise<void> {
-        const response = await fetch("/api");
-        await response.json();
-    };
+  async function fetchData(): Promise<void> {
+    const response = await fetch("/api");
+    await response.json();
+  }
 
-    fetchData();
+  fetchData();
 
 }, []);
 ```
 
----
+------------------------------------------------------------------------
 
 ## Infinite Render Loop
 
-Bad:
+Bad example:
 
 ```tsx
 useEffect(() => {
-    setCount(count + 1);
+  setCount(count + 1);
 }, [count]);
 ```
 
 This causes:
 
-```
-render → effect → state update → render → effect → ...
-```
+    render
+       ↓
+    effect runs
+       ↓
+    state updates
+       ↓
+    render again
+       ↓
+    infinite loop
 
-Correct:
+------------------------------------------------------------------------
 
-```tsx
-useEffect(() => {
-    setCount((prev) => prev + 1);
-}, []);
-```
+# 9. When NOT to Use useEffect
 
----
+Do not use `useEffect` for **derived state**.
 
-# When NOT To Use `useEffect`
-
-## Derived State
-
-Bad:
+Bad example:
 
 ```tsx
 const [fullName, setFullName] = useState<string>("");
 
 useEffect(() => {
-    setFullName(firstName + " " + lastName);
+  setFullName(firstName + " " + lastName);
 }, [firstName, lastName]);
 ```
 
@@ -302,55 +317,38 @@ Better:
 const fullName = `${firstName} ${lastName}`;
 ```
 
----
+------------------------------------------------------------------------
 
-## Expensive Calculations
-
-Use `useMemo` instead.
-
-```tsx
-import { useMemo } from "react";
-
-const sortedUsers = useMemo(() => {
-    return users.sort((a, b) => a.name.localeCompare(b.name));
-}, [users]);
-```
-
----
-
-# Quick Reference
+# 10. Quick Reference
 
 | Dependency | When Effect Runs |
-|------------|-----------------|
+|------------|------------------|
 | none | every render |
 | `[]` | once on mount |
-| `[value]` | when `value` changes |
+| `[value]` | when value changes |
 
 Examples:
 
 ```tsx
-useEffect(() => {},);
+useEffect(() => {});
 useEffect(() => {}, []);
 useEffect(() => {}, [count]);
 ```
 
----
+------------------------------------------------------------------------
 
-# Quick Tip
+# 11. Mental Model
 
-Before writing `useEffect`, ask:
+    Render = pure calculation
+    useEffect = side effects
 
+Flow:
+
+    State change
+       ↓
+    React renders UI
+       ↓
+    useEffect runs
+       ↓
+    side effects happen
 ```
-Is this a side effect?
-```
-
-Valid side effects:
-
-- API calls
-- timers
-- subscriptions
-- DOM manipulation
-- localStorage
-- event listeners
-
-If you can compute it during render, you **probably don't need `useEffect`.**
