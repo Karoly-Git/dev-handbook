@@ -1,199 +1,435 @@
-# Senior React Developer Knowledge
+# Senior React Developer Requirement
 
-## Core Areas a Senior React Developer Should Know
+## What Senior React Developers Are Expected To Know
 
-| Area | Key Knowledge |
-|-----|---------------|
-| React Fundamentals | Components, hooks, lifecycle, composition |
-| Rendering & Performance | Virtual DOM, reconciliation, memoization |
-| State Management | useState, useReducer, Context, global state tools |
-| Architecture | Scalable project structure, custom hooks |
-| TypeScript | Typed props, events, generics |
-| Data Fetching | fetch, axios, React Query |
-| Testing | Jest, React Testing Library |
-| Routing | React Router, nested routes |
-| Forms | React Hook Form, validation |
-| Tooling | Vite, Webpack, ESLint |
-| Performance | Code splitting, lazy loading |
-| Leadership | Code reviews, mentoring |
+------------------------------------------------------------------------
 
----
+# 1. Deep React Fundamentals
 
-# Implementation Examples
+A senior React developer is expected to fully understand how React
+actually works, not just how to write components.
 
-## Custom Hook Example
+Core concepts include:
 
-Use custom hooks to reuse logic across components.
+    Functional components
+    Hooks
+    useState
+    useEffect
+    useMemo
+    useCallback
+    useRef
+    useContext
+    Component lifecycle (via hooks)
+    Controlled vs uncontrolled components
+    Lifting state up
+    Composition vs inheritance
+
+------------------------------------------------------------------------
+
+# Example
 
 ```tsx
-import { useState, useEffect } from "react";
+const Counter = () => {
 
-type Collection = {
-    id: number;
-    name: string;
-};
+  const [count, setCount] = useState<number>(0);
 
-export const useCollections = () => {
-    const [collections, setCollections] = useState<Collection[]>([]);
+  const increment = () => {
+    setCount((prev) => prev + 1);
+  };
 
-    useEffect(() => {
-        fetchCollections();
-    }, []);
+  return (
+    <button onClick={increment}>
+      {count}
+    </button>
+  );
 
-    const fetchCollections = async (): Promise<void> => {
-        const response = await fetch("/api/collections");
-
-        if (!response.ok) {
-            throw new Error("Failed to fetch collections");
-        }
-
-        const data: Collection[] = await response.json();
-        setCollections(data);
-    };
-
-    return collections;
 };
 ```
 
----
+Senior developers also understand **why React behaves this way**, not
+only how to use the API.
 
-## Memoized Component
+------------------------------------------------------------------------
 
-Use `React.memo` to prevent unnecessary re-renders.
+# 2. React Rendering & Performance
+
+Senior developers understand how React renders and how to optimize
+performance.
+
+Important concepts:
+
+    Reconciliation
+    Virtual DOM
+    Render cycles
+    Avoiding unnecessary re-renders
+
+Common performance tools:
+
+    React.memo
+    useMemo
+    useCallback
+    Code splitting
+    Lazy loading
+
+------------------------------------------------------------------------
+
+# Example
 
 ```tsx
-import React from "react";
-
-type Props = {
-    label: string;
-};
-
-const Button = React.memo(({ label }: Props) => {
-    return (
-        <button>
-            {label}
-        </button>
-    );
+const ExpensiveComponent = React.memo(({ data }: Props) => {
+  return <div>{data}</div>;
 });
-
-export default Button;
 ```
 
----
+A senior developer also knows **when NOT to use these optimizations**.
 
-## Reducer State Management
+Over-optimization can sometimes make code harder to maintain.
 
-Use `useReducer` when state logic becomes complex.
+------------------------------------------------------------------------
+
+# 3. Advanced State Management
+
+Senior engineers understand multiple state management approaches.
+
+Local state:
+
+    useState
+    useReducer
+
+Global state:
+
+    Context API
+    Redux Toolkit
+    Zustand
+    TanStack Query / React Query
+
+------------------------------------------------------------------------
+
+# Example
 
 ```tsx
-import { useReducer } from "react";
+const reducer = (state: number, action: string) => {
 
-type Action = "increment" | "decrement";
+  switch (action) {
 
-const reducer = (state: number, action: Action): number => {
-    switch (action) {
-        case "increment":
-            return state + 1;
+    case "increment":
+      return state + 1;
 
-        case "decrement":
-            return state - 1;
+    case "decrement":
+      return state - 1;
 
-        default:
-            return state;
-    }
+    default:
+      return state;
+
+  }
+
 };
 
-export default function Counter() {
-    const [count, dispatch] = useReducer(reducer, 0);
+const Counter = () => {
 
-    return (
-        <>
-            <button onClick={() => dispatch("increment")}>
-                +
-            </button>
+  const [count, dispatch] = useReducer(reducer, 0);
 
-            <button onClick={() => dispatch("decrement")}>
-                -
-            </button>
+  return (
+    <>
+      <button onClick={() => dispatch("increment")}>+</button>
+      {count}
+    </>
+  );
 
-            <p>{count}</p>
-        </>
-    );
-}
+};
 ```
 
----
+Senior developers also understand **when global state is unnecessary**.
 
-## Data Fetching with React Query
+------------------------------------------------------------------------
 
-Modern applications often use React Query for server state.
+# 4. React Architecture
+
+Senior engineers structure large applications in a scalable way.
+
+Typical project structure:
+
+```
+src
+ ├ api
+ ├ components
+ ├ features
+ ├ hooks
+ ├ pages
+ ├ services
+ ├ store
+ ├ types
+ └ utils
+```
+
+Important architectural concepts:
+
+    Separation of concerns
+    Reusable components
+    Custom hooks
+    Feature-based architecture
+
+------------------------------------------------------------------------
+
+# Example Custom Hook
 
 ```tsx
-import { useQuery } from "@tanstack/react-query";
+export const useCollections = () => {
 
-type Collection = {
-    id: number;
-    name: string;
-};
+  const [data, setData] = useState([]);
 
-const getCollections = async (): Promise<Collection[]> => {
+  useEffect(() => {
+    fetchCollections();
+  }, []);
+
+  const fetchCollections = async () => {
+
     const res = await fetch("/api/collections");
+    const json = await res.json();
 
-    if (!res.ok) {
-        throw new Error("Failed to fetch collections");
-    }
+    setData(json);
 
-    return res.json();
+  };
+
+  return data;
+
 };
-
-export default function Example() {
-    const { data, isLoading } = useQuery({
-        queryKey: ["collections"],
-        queryFn: getCollections
-    });
-
-    if (isLoading) {
-        return <p>Loading...</p>;
-    }
-
-    return (
-        <ul>
-            {data?.map((c) => (
-                <li key={c.id}>
-                    {c.name}
-                </li>
-            ))}
-        </ul>
-    );
-}
 ```
 
----
+Custom hooks help encapsulate **logic and data fetching**.
 
-# Quick Tip
+------------------------------------------------------------------------
 
-Senior React developers focus on **architecture and performance**, not just syntax.
+# 5. TypeScript with React
 
-Key principles:
+Modern senior React developers are expected to be comfortable with
+TypeScript.
 
-1. Keep components small and reusable.
-2. Extract logic into custom hooks.
-3. Avoid unnecessary re-renders.
-4. Keep server state separate from UI state.
-5. Prefer composition over complex inheritance.
+Important TypeScript areas:
 
-Example minimal component:
+    Component props typing
+    Generic hooks
+    API types
+    Event types
+    Utility types
+
+------------------------------------------------------------------------
+
+# Example
 
 ```tsx
-type Props = {
-    title: string;
+type ButtonProps = {
+  label: string;
+  onClick: () => void;
 };
 
-export default function Card({ title }: Props) {
-    return (
-        <div>
-            <h2>{title}</h2>
-        </div>
-    );
-}
+const Button = ({ label, onClick }: ButtonProps) => {
+  return <button onClick={onClick}>{label}</button>;
+};
 ```
+
+TypeScript helps create **safer and more maintainable applications**.
+
+------------------------------------------------------------------------
+
+# 6. Data Fetching
+
+Senior developers understand modern data fetching patterns.
+
+Common tools:
+
+    fetch
+    axios
+    React Query / TanStack Query
+    SWR
+
+------------------------------------------------------------------------
+
+# Example
+
+```tsx
+const { data, isLoading } = useQuery({
+  queryKey: ["collections"],
+  queryFn: getAllCollections
+});
+```
+
+These tools help manage:
+
+    caching
+    loading states
+    background updates
+    request deduplication
+
+------------------------------------------------------------------------
+
+# 7. Testing
+
+Senior developers understand testing strategies.
+
+Common tools:
+
+    Jest
+    React Testing Library
+    Vitest
+
+------------------------------------------------------------------------
+
+# Example
+
+```tsx
+test("renders button", () => {
+
+  render(<Button label="Click" onClick={() => {}} />);
+
+  expect(screen.getByText("Click")).toBeInTheDocument();
+
+});
+```
+
+Testing ensures components behave correctly and prevents regressions.
+
+------------------------------------------------------------------------
+
+# 8. Routing
+
+Modern React applications rely on advanced routing.
+
+Common routing features:
+
+    React Router
+    Nested routes
+    Dynamic routes
+    Protected routes
+    Loaders
+
+------------------------------------------------------------------------
+
+# Example
+
+```tsx
+<Route path="/collections/:id" element={<CollectionPage />} />;
+```
+
+Routing controls how users navigate through the application.
+
+------------------------------------------------------------------------
+
+# 9. Forms
+
+Senior developers know how to manage complex forms.
+
+Popular libraries:
+
+    React Hook Form
+    Formik
+    Zod
+    Yup
+
+These tools help handle:
+
+    validation
+    form state
+    submission logic
+
+------------------------------------------------------------------------
+
+# 10. Build Tools & Ecosystem
+
+Senior developers understand the broader frontend ecosystem.
+
+Build tools:
+
+    Vite
+    Webpack
+
+Code quality tools:
+
+    ESLint
+    Prettier
+
+Styling approaches:
+
+    CSS Modules
+    SCSS
+    Tailwind
+    Styled Components
+
+------------------------------------------------------------------------
+
+# 11. Security & Best Practices
+
+Frontend security is also important.
+
+Key topics include:
+
+    XSS prevention
+    Sanitizing user input
+    Avoiding unsafe HTML
+    Authentication flows
+    Token storage
+
+Security awareness helps protect applications from vulnerabilities.
+
+------------------------------------------------------------------------
+
+# 12. Backend Awareness
+
+Senior frontend developers understand backend fundamentals.
+
+Important topics:
+
+    REST APIs
+    GraphQL
+    JWT authentication
+    CORS
+    HTTP caching
+
+This knowledge improves communication with backend teams and
+integration quality.
+
+------------------------------------------------------------------------
+
+# 13. Performance at Scale
+
+Senior engineers consider performance at large scale.
+
+Important considerations:
+
+    bundle size
+    tree shaking
+    lazy loading
+    SSR / SSG
+
+Common frameworks:
+
+    Next.js
+    Remix
+
+These techniques improve loading speed and scalability.
+
+------------------------------------------------------------------------
+
+# 14. Leadership Skills
+
+Senior developers also contribute beyond code.
+
+Key responsibilities:
+
+    Code reviews
+    Mentoring junior developers
+    Designing system architecture
+    Writing documentation
+    Making technical decisions
+
+------------------------------------------------------------------------
+
+# Real Senior React Skills Summary
+
+A true senior React developer can:
+
+    Debug complex rendering issues
+    Design scalable component architecture
+    Optimize performance
+    Choose appropriate state management
+    Lead frontend architecture decisions
